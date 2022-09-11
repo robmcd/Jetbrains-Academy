@@ -1,27 +1,18 @@
 import pandas as pd
 import numpy as np
-# write your code here
-user_input = input('provide the game state')
-# user_input = 'O_OXXO_XX'
-user_input = list(user_input)
+
+TEAMS = ['X', 'O']
 
 
-def print_game(user_input):
+def print_game(df_field: pd.DataFrame):
     print('---------')
-    for i in range(0, len(user_input), 3):
-        print(f'| {user_input[i]} {user_input[i + 1]} {user_input[i + 2]} |')
+    for index, values in df_field.iterrows():
+        print(f'| {" ".join([v for v in values])} |')
     print('---------')
-
-
-print_game(user_input)
-
-df = pd.DataFrame.from_records(np.array(user_input).reshape(3, 3))
-
-teams = ['X', 'O']
 
 
 def check_for_win(df: pd.DataFrame, candidate_team):
-    other_team = [t for t in teams if t != candidate_team][0]
+    other_team = [t for t in TEAMS if t != candidate_team][0]
     df = df.replace([candidate_team, other_team, '_'], [True, False, False])
     row_win = df.all(axis='columns').any()
     col_win = df.all(axis='index').any()
@@ -31,19 +22,77 @@ def check_for_win(df: pd.DataFrame, candidate_team):
     return win
 
 
-x_win = check_for_win(df, 'X')
-o_win = check_for_win(df, 'O')
-n_plays_per_team = pd.Series(user_input).replace('_', None).value_counts()
+def is_game_over(df_field: pd.DataFrame) -> bool:
+    """
 
-if (x_win and o_win) or max(n_plays_per_team) - min(n_plays_per_team) not in (0, 1):
-    print('Impossible')
-elif x_win:
-    print('X wins')
-elif o_win:
-    print('O wins')
-elif '_' not in user_input:
-    print('Draw')
-elif '_' in user_input:
-    print('Game not finished')
-else:
-    raise RuntimeError('unsure how to interpret game state.')
+    :param df_field:
+    :return: whether or not the game is over
+    """
+    x_win = check_for_win(df_field, 'X')
+    o_win = check_for_win(df_field, 'O')
+    n_plays_per_team = pd.Series(df_field.to_numpy().flatten()).replace('_', None).value_counts()
+    is_fresh_game = True if len(n_plays_per_team) == 0 else False
+    is_game_over = True
+
+    if is_fresh_game:
+        is_game_over = False
+    else:
+        if (x_win and o_win) or max(n_plays_per_team) - min(n_plays_per_team) not in (0, 1):
+            print('Impossible')
+        elif x_win:
+            print('X wins')
+        elif o_win:
+            print('O wins')
+        elif '_' not in df_field.to_numpy():
+            print('Draw')
+        elif '_' in df_field.to_numpy():
+            is_game_over = False
+        else:
+            raise RuntimeError('unsure how to interpret game state.')
+    return is_game_over
+
+
+def get_next_move():
+    """
+
+    :return: tuple representing row, col co-ords.
+    """
+    while True:
+        user_move = input('Input your move')
+        try:
+            row, col = user_move.strip().replace(',', ' ').split(maxsplit=1)
+        except ValueError:
+            continue
+
+        try:
+            row, col = int(row) - 1, int(col) - 1
+        except ValueError:
+            print('You should enter numbers!')
+            continue
+
+        if max(row, col) > 2 or min(row, col) < 0:
+            print('Coordinates should be from 1 to 3!')
+            continue
+
+        if df_field.loc[row, col] != '_':
+            print('This cell is occupied! Choose another one!')
+            continue
+
+        return row, col
+
+
+field = list('_' * 9)
+
+global df_field
+df_field = pd.DataFrame.from_records(np.array(field).reshape(3, 3))
+print_game(df_field)
+player = 'X'
+
+while not is_game_over(df_field):
+    row, col = get_next_move()
+    df_field.loc[row, col] = player
+    print_game(df_field)
+    player = [t for t in TEAMS if t != player][0]
+
+
+# eval_game_status(df_field)

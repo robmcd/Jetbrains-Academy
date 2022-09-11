@@ -189,7 +189,7 @@ files:
     if __name__ == '__main__':
         TicTacToeTest().run_tests()
   learner_created: false
-feedback_link: https://hyperskill.org/projects/73/stages/400/implement#comment
+feedback_link: https://hyperskill.org/learn/step/6504#comment
 status: Solved
 feedback:
   message: Congratulations!
